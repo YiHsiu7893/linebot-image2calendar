@@ -1,14 +1,11 @@
-import json
 import logging
 import os
 import sys
-
-if os.getenv("API_ENV") != "production":
-    from dotenv import load_dotenv
-
-    load_dotenv()
-
-
+from pydub import AudioSegment
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import requests
+from urllib.parse import urlencode
 from fastapi import FastAPI, HTTPException, Request
 from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import (
@@ -20,65 +17,114 @@ from linebot.v3.messaging import (
     MessagingApiBlob,
 )
 from linebot.v3.exceptions import InvalidSignatureError
-from linebot.v3.webhooks import MessageEvent, TextMessageContent, ImageMessageContent
-
+from linebot.v3.webhooks import MessageEvent, AudioMessageContent
+import google.generativeai as genai
 import uvicorn
-from fastapi.responses import RedirectResponse
+from utils import *
 
+
+# 初始化日誌
 logging.basicConfig(level=os.getenv("LOG", "WARNING"))
 logger = logging.getLogger(__file__)
 
+
+# 讀取 LINE 和 OAuth2 參數
+channel_secret = os.getenv("LINE_CHANNEL_SECRET")
+channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
+redirect_uri = os.getenv("REDIRECT_URI")
+gemini_key = os.getenv("GEMINI_API_KEY")
+
+if not all([channel_secret, channel_access_token, client_id, client_secret, redirect_uri, gemini_key]):
+    logger.error("環境變數缺失。請檢查配置。")
+    sys.exit(1)
+
+
+# 初始化 FastAPI 和 LINE Bot
 app = FastAPI()
-
-channel_secret = os.getenv("LINE_CHANNEL_SECRET", None)
-channel_access_token = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", None)
-if channel_secret is None:
-    print("Specify LINE_CHANNEL_SECRET as environment variable.")
-    sys.exit(1)
-if channel_access_token is None:
-    print("Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.")
-    sys.exit(1)
-
 configuration = Configuration(access_token=channel_access_token)
-
 handler = WebhookHandler(channel_secret)
 
 
-import google.generativeai as genai
-from firebase import firebase
-from utils import check_image, create_gcal_url, is_url_valid, shorten_url_by_reurl_api
+# 設定 OAuth 2.0 參數
+scope = 'https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/drive'
+auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code'})}"
 
 
-firebase_url = os.getenv("FIREBASE_URL")
-gemini_key = os.getenv("GEMINI_API_KEY")
-
-
-# Initialize the Gemini Pro API
+# 初始化 Gemini Pro API
 genai.configure(api_key=gemini_key)
 
 
-@app.get("/health")
-async def health():
-    return "ok"
+# 儲存授權碼與權杖
+authorization_code = None
+access_token = None
+
+def exchange_code_for_token(code: str):
+    """交換授權碼換取存取權杖"""
+    token_url = "https://oauth2.googleapis.com/token"
+    payload = {
+        'code': code,
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'redirect_uri': redirect_uri,
+        'grant_type': 'authorization_code',
+    }
+    response = requests.post(token_url, data=payload)
+
+    return response.json()
 
 
-@app.get("/")
-async def find_image_keyword(img_url: str):
-    image_data = check_image(img_url)
-    image_data = json.loads(image_data)
+# @app.get("/health")
+# async def health():
+#     return "ok"
 
-    g_url = create_gcal_url(
-        image_data["title"],
-        image_data["time"],
-        image_data["location"],
-        image_data["content"],
+
+# @app.get("/")
+# async def find_image_keyword(img_url: str):
+#     image_data = check_image(img_url)
+#     image_data = json.loads(image_data)
+
+#     g_url = create_gcal_url(
+#         image_data["title"],
+#         image_data["time"],
+#         image_data["location"],
+#         image_data["content"],
+#     )
+#     if is_url_valid(g_url):
+#         return RedirectResponse(g_url)
+#     else:
+#         return "Error"
+
+@app.get("/oauth2callback")
+async def oauth2callback(code: str):
+    global authorization_code
+    authorization_code = code
+    return {"message": f"授權成功，授權碼: {authorization_code}"}
+
+@app.get("/get_token")
+async def get_token():
+    global access_token
+    if authorization_code:
+        token_response = exchange_code_for_token(authorization_code)
+        access_token = token_response.get('access_token')
+
+    creds = Credentials(
+    token=access_token,
+    token_uri='https://oauth2.googleapis.com/token',
+    client_id=client_id,
+    client_secret=client_secret
     )
-    if is_url_valid(g_url):
-        return RedirectResponse(g_url)
-    else:
-        return "Error"
 
+    # 使用憑證初始化 form_service 物件
+    global form_service
+    form_service = build(
+        "forms", "v1",
+        credentials=creds,
+        static_discovery=False
+    )
 
+# 啟動 FastAPI 應用程式
 @app.post("/webhooks/line")
 async def handle_callback(request: Request):
     signature = request.headers["X-Line-Signature"]
@@ -92,80 +138,28 @@ async def handle_callback(request: Request):
     except InvalidSignatureError:
         raise HTTPException(status_code=400, detail="Invalid signature")
 
+# LINE Bot 事件處理
+@handler.add(MessageEvent, message=AudioMessageContent)
+def handle_audio_message(event):
+    # 下載語音訊息檔案
+    audio_message_id = event.message.id
 
-@handler.add(MessageEvent, message=TextMessageContent)
-def handle_text_message(event):
-    logging.info(event)
-    text = event.message.text
-    user_id = event.source.user_id
-
-    fdb = firebase.FirebaseApplication(firebase_url, None)
-
-    user_chat_path = f"chat/{user_id}"
-    # chat_state_path = f'state/{user_id}'
-    conversation_data = fdb.get(user_chat_path, None)
-    model = genai.GenerativeModel("gemini-1.5-pro")
-
-    if conversation_data is None:
-        messages = []
-    else:
-        messages = conversation_data
-
-    if text == "C":
-        fdb.delete(user_chat_path, None)
-        reply_msg = "已清空對話紀錄"
-    elif is_url_valid(text):
-        image_data = check_image(text)
-        image_data = json.loads(image_data)
-        g_url = create_gcal_url(
-            image_data["title"],
-            image_data["time"],
-            image_data["location"],
-            image_data["content"],
-        )
-        reply_msg = shorten_url_by_reurl_api(g_url)
-    elif text == "A":
-        response = model.generate_content(
-            f"Summary the following message in Traditional Chinese by less 5 list points. \n{messages}"
-        )
-        reply_msg = response.text
-    else:
-        messages.append({"role": "user", "parts": [text]})
-        response = model.generate_content(messages)
-        messages.append({"role": "model", "parts": [text]})
-        # 更新firebase中的對話紀錄
-        fdb.put_async(user_chat_path, None, messages)
-        reply_msg = response.text
-
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
-        line_bot_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_msg)],
-            )
-        )
-
-    return "OK"
-
-
-@handler.add(MessageEvent, message=ImageMessageContent)
-def handle_github_message(event):
-    image_content = b""
     with ApiClient(configuration) as api_client:
         line_bot_blob_api = MessagingApiBlob(api_client)
-        image_content = line_bot_blob_api.get_message_content(event.message.id)
-    image_data = check_image(b_image=image_content)
-    image_data = json.loads(image_data)
-    logger.info("---- Image handler JSON ----")
-    logger.info(image_data)
-    g_url = create_gcal_url(
-        image_data["title"],
-        image_data["time"],
-        image_data["location"],
-        image_data["content"],
-    )
-    reply_msg = shorten_url_by_reurl_api(g_url)
+        audio_content = line_bot_blob_api.get_message_content(audio_message_id)
+    
+    m4a_path = f"/tmp/{audio_message_id}.m4a"   
+    with open(m4a_path, "wb") as f:
+        f.write(audio_content.content)
+        
+    # 將 M4A 轉成 MP3
+    mp3_path = f"/tmp/{audio_message_id}.mp3"
+    audio = AudioSegment.from_file(m4a_path, format="m4a")
+    audio.export(mp3_path, format="mp3")
+
+    # 發送語音檔案給 Gemini API，回傳表單連結
+    form_url = make_form(mp3_path, form_service, access_token)
+    reply_msg = shorten_url_by_reurl_api(form_url)
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
@@ -175,6 +169,7 @@ def handle_github_message(event):
             )
         )
     return "OK"
+
 
 
 if __name__ == "__main__":
