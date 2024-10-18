@@ -75,39 +75,12 @@ def exchange_code_for_token(code: str):
     return response.json()
 
 
-# @app.get("/health")
-# async def health():
-#     return "ok"
-
-
-# @app.get("/")
-# async def find_image_keyword(img_url: str):
-#     image_data = check_image(img_url)
-#     image_data = json.loads(image_data)
-
-#     g_url = create_gcal_url(
-#         image_data["title"],
-#         image_data["time"],
-#         image_data["location"],
-#         image_data["content"],
-#     )
-#     if is_url_valid(g_url):
-#         return RedirectResponse(g_url)
-#     else:
-#         return "Error"
-
 @app.get("/oauth2callback")
-async def oauth2callback(code: str):
-    global authorization_code
-    authorization_code = code
-    return {"message": f"授權成功，授權碼: {authorization_code}"}
-
-@app.get("/get_token")
-async def get_token():
-    global access_token
-    if authorization_code:
-        token_response = exchange_code_for_token(authorization_code)
-        access_token = token_response.get('access_token')
+async def oauth2callback(request: Request):
+    authorization_code = request.query_params.get("code")
+    #return {"message": f"授權成功，授權碼: {authorization_code}"}
+    token_response = exchange_code_for_token(authorization_code)
+    access_token = token_response.get('access_token')
 
     creds = Credentials(
     token=access_token,
@@ -123,6 +96,7 @@ async def get_token():
         credentials=creds,
         static_discovery=False
     )
+
 
 # 啟動 FastAPI 應用程式
 @app.post("/webhooks/line")
@@ -141,6 +115,16 @@ async def handle_callback(request: Request):
 # LINE Bot 事件處理
 @handler.add(MessageEvent, message=AudioMessageContent)
 def handle_audio_message(event):
+    #檢查是否已授權
+    if not access_token:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    replyToken=event.reply_token, messages=[TextMessage(text=f"請點擊以下連結進行授權：{auth_url}")]
+                )
+            )
+            
     # 下載語音訊息檔案
     audio_message_id = event.message.id
 
