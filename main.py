@@ -48,7 +48,7 @@ handler = WebhookHandler(channel_secret)
 
 
 # 設定 OAuth 2.0 參數
-scope = "https://www.googleapis.com/auth/cloud-platform"
+scope = 'https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/drive'
 auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code'})}"
 
 
