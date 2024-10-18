@@ -150,7 +150,7 @@ def handle_audio_message(event):
     
     m4a_path = f"/tmp/{audio_message_id}.m4a"   
     with open(m4a_path, "wb") as f:
-        f.write(audio_content.content)
+        f.write(audio_content)
         
     # 將 M4A 轉成 MP3
     mp3_path = f"/tmp/{audio_message_id}.mp3"
