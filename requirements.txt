@@ -5,4 +5,5 @@ google.generativeai
 grpcio
 pillow
 requests
-git+https://github.com/ozgur/python-firebase
+pydub
+#git+https://github.com/ozgur/python-firebase
