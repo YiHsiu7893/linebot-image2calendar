@@ -114,8 +114,13 @@ index由0依序編號。
 }
 """
 
-def make_form(audio_file, form_service, access_token):
+def make_form(audio_path, form_service, access_token):
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))    
+
+    if audio_path is not None:
+        audio_file = genai.upload_file(path=audio_path)
+    else:
+        return "None"
 
     model = genai.GenerativeModel("gemini-1.5-flash")
 
