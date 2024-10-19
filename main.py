@@ -3,6 +3,7 @@ import os
 import sys
 from pydub import AudioSegment
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request as Req
 from googleapiclient.discovery import build
 import requests
 from urllib.parse import urlencode
@@ -131,7 +132,7 @@ def handle_audio_message(event):
         scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
         )
         try:
-            creds.refresh(Request())
+            creds.refresh(Req())
         except Exception as e:
             print(f"Failed to refresh token: {e}")
             
