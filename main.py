@@ -114,7 +114,7 @@ def handle_audio_message(event):
         
         # 用授權碼交換存取權杖
         token_data = exchange_code_for_token(authorization_code)
-        print(token_data)  # 檢查回應資料
+        print("here:\n"+ token_data)  # 檢查回應資料
         
         access_token = token_data.get('access_token')
         refresh_token = token_data.get('refresh_token')
