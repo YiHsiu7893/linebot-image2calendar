@@ -115,7 +115,6 @@ async def handle_callback(request: Request):
 # LINE Bot 事件處理
 @handler.add(MessageEvent, message=AudioMessageContent)
 def handle_audio_message(event):
-    global access_token
     #檢查是否已授權
     if not access_token:
         with ApiClient(configuration) as api_client:
@@ -125,23 +124,7 @@ def handle_audio_message(event):
                     replyToken=event.reply_token, messages=[TextMessage(text=f"請點擊以下連結進行授權：{auth_url}")]
                 )
             )
-        authorization_code = requests.get('http://localhost:8080/get_token')
-        access_token = exchange_code_for_token(authorization_code.text)['access_token']
-
-        creds = Credentials(
-            token=access_token,
-            token_uri='https://oauth2.googleapis.com/token',
-            client_id=client_id,
-            client_secret=client_secret
-            )
-
-        # 使用憑證初始化 form_service 物件
-        form_service = build(
-            "forms", "v1",
-            credentials=creds,
-            static_discovery=False
-        )
-            
+      
     # 下載語音訊息檔案
     audio_message_id = event.message.id
 
