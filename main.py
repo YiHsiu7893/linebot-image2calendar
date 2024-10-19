@@ -149,12 +149,15 @@ def handle_audio_message(event):
     with ApiClient(configuration) as api_client:
         line_bot_blob_api = MessagingApiBlob(api_client)
         audio_content = line_bot_blob_api.get_message_content(audio_message_id)
+    print(type(audio_content))
         
     # 將 M4A 轉成 MP3
     import tempfile
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_audio_file:
         temp_audio_file.write(audio_content)
         mp3_file = temp_audio_file.name
+
+    print(type(mp3_file))
 
     # 發送語音檔案給 Gemini API，回傳表單連結
     form_url = make_form(mp3_file, form_service, access_token)
