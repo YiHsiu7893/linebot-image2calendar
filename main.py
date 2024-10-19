@@ -75,27 +75,12 @@ def exchange_code_for_token(code: str):
     return response.json()
 
 
-@app.get("/oauth2callback")
-async def oauth2callback(request: Request):
-    authorization_code = request.query_params.get("code")
-    #return {"message": f"授權成功，授權碼: {authorization_code}"}
-    token_response = exchange_code_for_token(authorization_code)
-    access_token = token_response.get('access_token')
-
-    creds = Credentials(
-    token=access_token,
-    token_uri='https://oauth2.googleapis.com/token',
-    client_id=client_id,
-    client_secret=client_secret
-    )
-
-    # 使用憑證初始化 form_service 物件
-    global form_service
-    form_service = build(
-        "forms", "v1",
-        credentials=creds,
-        static_discovery=False
-    )
+# @app.get("/oauth2callback")
+# async def oauth2callback(request: Request):
+#     authorization_code = request.query_params.get("code")
+#     #return {"message": f"授權成功，授權碼: {authorization_code}"}
+#     token_response = exchange_code_for_token(authorization_code)
+#     access_token = token_response.get('access_token')
 
 
 # 啟動 FastAPI 應用程式
@@ -142,8 +127,21 @@ def handle_audio_message(event):
         # 用授權碼交換存取權杖
         token_data = exchange_code_for_token(authorization_code)
         access_token = token_data.get('access_token')
-        
-        print(f"Access Token: {access_token}")
+
+        creds = Credentials(
+        token=access_token,
+        token_uri='https://oauth2.googleapis.com/token',
+        client_id=client_id,
+        client_secret=client_secret
+        )
+    
+        # 使用憑證初始化 form_service 物件
+        global form_service
+        form_service = build(
+            "forms", "v1",
+            credentials=creds,
+            static_discovery=False
+        )
       
     # 下載語音訊息檔案
     audio_message_id = event.message.id
