@@ -129,7 +129,7 @@ def handle_audio_message(event):
         # authorization_code = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
         # access_token = exchange_code_for_token(authorization_code.text)['access_token']
 
-        response = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
+        response = requests.get('https://6136-60-251-196-84.ngrok-free.app/get_token')
 
         # 檢查是否成功取得授權碼
         if response.status_code == 200:
