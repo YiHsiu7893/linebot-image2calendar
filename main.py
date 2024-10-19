@@ -61,6 +61,7 @@ genai.configure(api_key=gemini_key)
 # 儲存授權碼與權杖
 authorization_code = None
 access_token = None
+refresh_token = None
 
 def exchange_code_for_token(code: str):
     """交換授權碼換取存取權杖"""
@@ -97,6 +98,7 @@ def handle_audio_message(event):
     
     #檢查是否已授權
     global access_token
+    global refresh_token
     if not access_token:
         with ApiClient(configuration) as api_client:
             line_bot_api = MessagingApi(api_client)
