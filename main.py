@@ -49,7 +49,7 @@ handler = WebhookHandler(channel_secret)
 
 # 設定 OAuth 2.0 參數
 scope = 'https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/drive'
-auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code', 'access_type': 'offline'})}"
+auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code', 'access_type': 'offline', 'prompt': 'consent'})}"
 
 
 # 初始化 Gemini Pro API
@@ -114,8 +114,13 @@ def handle_audio_message(event):
         
         # 用授權碼交換存取權杖
         token_data = exchange_code_for_token(authorization_code)
+        print(token_data)  # 檢查回應資料
+        
         access_token = token_data.get('access_token')
         refresh_token = token_data.get('refresh_token')
+        
+        if not access_token or not refresh_token:
+            raise ValueError("Access or refresh token missing.")
 
         creds = Credentials(
         token=access_token,
