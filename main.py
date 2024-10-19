@@ -132,7 +132,7 @@ def handle_audio_message(event):
         token_uri='https://oauth2.googleapis.com/token',
         client_id=client_id,
         client_secret=client_secret,
-        scopes=['https://www.googleapis.com/auth/forms', 'https://www.googleapis.com/auth/drive']
+        scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
         )
         creds.refresh(Request())
     
