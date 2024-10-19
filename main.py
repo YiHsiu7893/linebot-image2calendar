@@ -125,27 +125,27 @@ def handle_audio_message(event):
         if not access_token or not refresh_token:
             raise ValueError("Access or refresh token missing.")
 
-        creds = Credentials(
-        token=access_token,
-        refresh_token=refresh_token,
-        token_uri='https://oauth2.googleapis.com/token',
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
-        )
-        print(f"Credentials: {creds}")
-        try:
-            creds.refresh(Req())
-        except Exception as e:
-            print(f"Failed to refresh token: {e}")
-            
-        # 使用憑證初始化 form_service 物件
-        global form_service
-        form_service = build(
-            "forms", "v1",
-            credentials=creds,
-            static_discovery=False
-        )
+    creds = Credentials(
+    token=access_token,
+    refresh_token=refresh_token,
+    token_uri='https://oauth2.googleapis.com/token',
+    client_id=client_id,
+    client_secret=client_secret,
+    scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
+    )
+    print(f"Credentials: {creds}")
+    try:
+        creds.refresh(Req())
+    except Exception as e:
+        print(f"Failed to refresh token: {e}")
+        
+    # 使用憑證初始化 form_service 物件
+    global form_service
+    form_service = build(
+        "forms", "v1",
+        credentials=creds,
+        static_discovery=False
+    )
 
       
     # 下載語音訊息檔案
