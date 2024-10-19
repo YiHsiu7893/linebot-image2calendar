@@ -167,7 +167,9 @@ def handle_audio_message(event):
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        line_bot_api.push_message(user_id, TextMessage(text=reply_msg))
+        line_bot_api.push_message(
+            PushMessageRequest(to = user_id, messages = [TextMessage(text=reply_msg)])
+        )
         
     return "OK"
 
