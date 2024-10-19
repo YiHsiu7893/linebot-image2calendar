@@ -115,6 +115,7 @@ async def handle_callback(request: Request):
 # LINE Bot 事件處理
 @handler.add(MessageEvent, message=AudioMessageContent)
 def handle_audio_message(event):
+    global access_token
     #檢查是否已授權
     if not access_token:
         with ApiClient(configuration) as api_client:
