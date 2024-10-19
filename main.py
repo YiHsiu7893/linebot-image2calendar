@@ -127,20 +127,6 @@ def handle_audio_message(event):
         if not access_token or not refresh_token:
             raise ValueError("Access or refresh token missing.")
 
-        # 返回 HTML，自動關閉頁面
-        return """
-        <html>
-            <head><title>授權成功</title></head>
-            <body>
-                <h1>授權成功！</h1>
-                <script type="text/javascript">
-                    setTimeout(function() {
-                        window.close();
-                    }, 1000);
-                </script>
-            </body>
-        </html>
-        """
 
     creds = Credentials(
         token=access_token,
@@ -183,7 +169,7 @@ def handle_audio_message(event):
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        line_bot_api.push_message(PushMessageRequest(user_id, messages=[TextMessage(text=reply_msg)]))
+        line_bot_api.push_message(PushMessageRequest(to=user_id, messages=[TextMessage(text=reply_msg)]))
         
     return "OK"
 
