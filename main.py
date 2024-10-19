@@ -12,8 +12,8 @@ from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import (
     Configuration,
     ReplyMessageRequest,
+    PushMessageRequest,
     TextMessage,
-    TextSendMessage,
     ApiClient,
     MessagingApi,
     MessagingApiBlob,
@@ -166,7 +166,7 @@ def handle_audio_message(event):
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        line_bot_api.push_message(user_id, TextSendMessage(text=reply_msg))
+        line_bot_api.push_message(PushMessageRequest(user_id, messages=[TextMessage(text=reply_msg)]))
         
     return "OK"
 
