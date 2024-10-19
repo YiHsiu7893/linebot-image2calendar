@@ -118,7 +118,6 @@ def handle_audio_message(event):
         
         # 用授權碼交換存取權杖
         token_data = exchange_code_for_token(authorization_code)
-        print(token_data)  # 檢查回應資料
         
         access_token = token_data.get('access_token')
         refresh_token = token_data.get('refresh_token')
@@ -127,14 +126,13 @@ def handle_audio_message(event):
             raise ValueError("Access or refresh token missing.")
 
     creds = Credentials(
-    token=access_token,
-    refresh_token=refresh_token,
-    token_uri='https://oauth2.googleapis.com/token',
-    client_id=client_id,
-    client_secret=client_secret,
-    scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
+        token=access_token,
+        refresh_token=refresh_token,
+        token_uri='https://oauth2.googleapis.com/token',
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
     )
-    print(f"Credentials: {creds}")
     try:
         creds.refresh(Req())
     except Exception as e:
