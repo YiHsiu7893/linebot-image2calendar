@@ -74,15 +74,6 @@ def exchange_code_for_token(code: str):
 
     return response.json()
 
-
-# @app.get("/oauth2callback")
-# async def oauth2callback(request: Request):
-#     authorization_code = request.query_params.get("code")
-#     #return {"message": f"授權成功，授權碼: {authorization_code}"}
-#     token_response = exchange_code_for_token(authorization_code)
-#     access_token = token_response.get('access_token')
-
-
 # 啟動 FastAPI 應用程式
 @app.post("/webhooks/line")
 async def handle_callback(request: Request):
@@ -134,8 +125,11 @@ def handle_audio_message(event):
         client_secret=client_secret,
         scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
         )
-        creds.refresh(Request())
-    
+        try:
+            creds.refresh(Request())
+        except Exception as e:
+            print(f"Failed to refresh token: {e}")
+            
         # 使用憑證初始化 form_service 物件
         global form_service
         form_service = build(
