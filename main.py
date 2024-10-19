@@ -126,8 +126,24 @@ def handle_audio_message(event):
                 )
             )
 
-        authorization_code = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
-        access_token = exchange_code_for_token(authorization_code.text)['access_token']
+        # authorization_code = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
+        # access_token = exchange_code_for_token(authorization_code.text)['access_token']
+
+        response = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
+
+        # 檢查是否成功取得授權碼
+        if response.status_code == 200:
+            authorization_code = response.json().get('authorization_code')
+            if not authorization_code:
+                raise Exception("Authorization code not found in response.")
+        else:
+            raise Exception(f"Failed to get authorization code: {response.text}")
+        
+        # 用授權碼交換存取權杖
+        token_data = exchange_code_for_token(authorization_code)
+        access_token = token_data.get('access_token')
+        
+        print(f"Access Token: {access_token}")
       
     # 下載語音訊息檔案
     audio_message_id = event.message.id
