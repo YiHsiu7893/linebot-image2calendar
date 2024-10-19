@@ -107,7 +107,7 @@ def handle_audio_message(event):
             line_bot_api = MessagingApi(api_client)
             line_bot_api.reply_message(
                 ReplyMessageRequest(
-                    replyToken=event.reply_token, messages=[TextMessage(text=f"請點擊以下連結進行授權：{auth_url}")]
+                    replyToken=event.reply_token, messages=[TextMessage(text=f"請點擊以下連結進行授權：{shorten_url_by_reurl_api(auth_url)}")]
                 )
             )
 
