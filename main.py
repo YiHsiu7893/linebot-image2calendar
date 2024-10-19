@@ -125,6 +125,21 @@ def handle_audio_message(event):
         if not access_token or not refresh_token:
             raise ValueError("Access or refresh token missing.")
 
+        # 返回 HTML，自動關閉頁面
+        return """
+        <html>
+            <head><title>授權成功</title></head>
+            <body>
+                <h1>授權成功！</h1>
+                <script type="text/javascript">
+                    setTimeout(function() {
+                        window.close();
+                    }, 1000);
+                </script>
+            </body>
+        </html>
+        """
+
     creds = Credentials(
         token=access_token,
         refresh_token=refresh_token,
