@@ -165,10 +165,10 @@ def handle_audio_message(event):
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        line_bot_api.reply_message(
-            ReplyMessageRequest(
-                replyToken=event.reply_token, messages=[TextMessage(text=reply_msg)]
-            )
+        user_id = event.source.user_id  # 取得使用者 ID
+        line_bot_api.push_message(
+            user_id,
+            TextMessage(text=reply_msg)
         )
     return "OK"
 
