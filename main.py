@@ -49,7 +49,7 @@ handler = WebhookHandler(channel_secret)
 
 # 設定 OAuth 2.0 參數
 scope = 'https://www.googleapis.com/auth/forms.body https://www.googleapis.com/auth/drive'
-auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code'})}"
+auth_url = f"https://accounts.google.com/o/oauth2/auth?{urlencode({'client_id': client_id, 'redirect_uri': redirect_uri, 'scope': scope, 'response_type': 'code', 'access_type': 'offline'})}"
 
 
 # 初始化 Gemini Pro API
@@ -111,10 +111,7 @@ def handle_audio_message(event):
                 )
             )
 
-        # authorization_code = requests.get('https://24fa-220-128-153-61.ngrok-free.app/get_token')
-        # access_token = exchange_code_for_token(authorization_code.text)['access_token']
-
-        response = requests.get('https://6136-60-251-196-84.ngrok-free.app/get_token')
+        response = requests.get('https://cbc7-220-128-153-63.ngrok-free.app/get_token')
 
         # 檢查是否成功取得授權碼
         if response.status_code == 200:
@@ -127,13 +124,16 @@ def handle_audio_message(event):
         # 用授權碼交換存取權杖
         token_data = exchange_code_for_token(authorization_code)
         access_token = token_data.get('access_token')
+        refresh_token = token_data.get('refresh_token')
 
         creds = Credentials(
         token=access_token,
+        refresh_token=refresh_token,
         token_uri='https://oauth2.googleapis.com/token',
         client_id=client_id,
         client_secret=client_secret
         )
+        creds.refresh(Request())
     
         # 使用憑證初始化 form_service 物件
         global form_service
@@ -142,6 +142,7 @@ def handle_audio_message(event):
             credentials=creds,
             static_discovery=False
         )
+
       
     # 下載語音訊息檔案
     audio_message_id = event.message.id
