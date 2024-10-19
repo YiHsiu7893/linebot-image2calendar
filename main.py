@@ -131,6 +131,7 @@ def handle_audio_message(event):
         client_secret=client_secret,
         scopes=['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/drive']
         )
+        print(f"Credentials: {creds}")
         try:
             creds.refresh(Req())
         except Exception as e:
