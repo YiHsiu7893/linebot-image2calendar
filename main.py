@@ -13,6 +13,7 @@ from linebot.v3.messaging import (
     Configuration,
     ReplyMessageRequest,
     TextMessage,
+    TextSendMessage,
     ApiClient,
     MessagingApi,
     MessagingApiBlob,
@@ -105,7 +106,7 @@ def handle_audio_message(event):
                 )
             )
 
-        response = requests.get('https://15ad-140-113-136-213.ngrok-free.app/get_token')
+        response = requests.get('https://37ee-140-113-94-119.ngrok-free.app/get_token')
 
         # 檢查是否成功取得授權碼
         if response.status_code == 200:
@@ -167,9 +168,7 @@ def handle_audio_message(event):
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)
-        line_bot_api.push_message(
-            PushMessageRequest(to = user_id, messages = [TextMessage(text=reply_msg)])
-        )
+        line_bot_api.push_message(user_id, TextSendMessage(text=reply_msg))
         
     return "OK"
 
