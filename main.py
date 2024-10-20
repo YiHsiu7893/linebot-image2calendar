@@ -108,7 +108,7 @@ def handle_audio_message(event):
                 )
             )
 
-        response = requests.get('https://37ee-140-113-94-119.ngrok-free.app/get_token')
+        response = requests.get('https://685d-60-251-196-41.ngrok-free.app/get_token')
 
         # 檢查是否成功取得授權碼
         if response.status_code == 200:
